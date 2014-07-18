@@ -66,13 +66,6 @@ class arcusNode;
 #define MAX_CMD_LEN			1024
 
 
-const static uint64_t BKEY_LONG_MIN	= 0;
-const static uint64_t BKEY_LONG_MAX	= (uint64_t)0xffffffffffffffff;
-static vector<unsigned char> BKEY_HEX_MIN;
-static vector<unsigned char> BKEY_HEX_MAX;
-
-
-
 
 struct arcusUtil/*{{{*/
 {
@@ -86,11 +79,6 @@ struct arcusUtil/*{{{*/
 		}
 		else {
 			little_endian = false;
-		}
-
-		BKEY_HEX_MIN.push_back(0);
-		for (int i=0; i<31; i++) {
-			BKEY_HEX_MAX.push_back(255);
 		}
 	}
 /*}}}*/

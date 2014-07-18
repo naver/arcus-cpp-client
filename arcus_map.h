@@ -32,6 +32,44 @@ class arcusMapNotCached {};
 class arcusMapException {};
 
 
+template <typename K>
+struct arcusBKeyMinMax
+{
+	static K get_min_key() { assert(false); }
+	static K get_max_key() { assert(false); }
+};
+
+
+template <>
+struct arcusBKeyMinMax<uint64_t>
+{
+	static uint64_t get_min_key()
+	{ 
+		return arcusBKey::get_min_long_key().l_key;
+	}
+
+	static uint64_t get_max_key()
+	{ 
+		return arcusBKey::get_max_long_key().l_key;
+	}
+};
+
+template <>
+struct arcusBKeyMinMax<vector<unsigned char> >
+{
+	static vector<unsigned char> get_min_key()
+	{ 
+		return arcusBKey::get_min_hex_key().h_key;
+	}
+
+	static vector<unsigned char> get_max_key()
+	{ 
+		return arcusBKey::get_max_hex_key().h_key;
+	}
+};
+
+
+
 
 template <typename K, typename V>
 class arcusMap
@@ -123,6 +161,15 @@ public:
 			return !(*this == rhs);
 		}
 
+		pair<K, arcusBopItem<V> > operator*()
+		{
+			if (map_->on_cache) {
+				return pair<K, arcusBopItem<V> >(it->first, it->second);
+			}
+
+			return pair<K, arcusBopItem<V> >(bkey, arcusBopItem<V>());
+		}
+
 		K first()
 		{
 			if (map_->on_cache) {
@@ -155,15 +202,10 @@ public:
 				recache();
 			}
 
-			iterator it(this, cache.begin());
+			return iterator(this, cache.begin());
 		}
 
-		if (bkey_type == arcusBKey::BKEY_LONG) {
-			return iterator(this, BKEY_LONG_MIN);
-		}
-		else {
-			return iterator(this, BKEY_HEX_MIN);
-		}
+		return iterator(this, arcusBKeyMinMax<K>::get_min_key());
 	}
 /*}}}*/
 
@@ -177,12 +219,7 @@ public:
 			return iterator(this, cache.end());
 		}
 
-		if (bkey_type == arcusBKey::BKEY_LONG) {
-			return iterator(this, BKEY_LONG_MAX);
-		}
-		else {
-			return iterator(this, BKEY_HEX_MAX);
-		}
+		return iterator(this, arcusBKeyMinMax<K>::get_max_key());
 	}
 /*}}}*/
 
@@ -196,25 +233,26 @@ public:
 	}
 
 public:
-	arcusMap(arcus* client, const string& key, arcusBKey::ARCUS_BKEY_TYPE bkey_type = arcusBKey::BKEY_LONG, int cache_time = 0)/*{{{*/
+	arcusMap(arcus* client, const string& key, int cache_time = 0)/*{{{*/
 	{
 		this->client = client;
 		this->key = key;
 		this->cache_time = cache_time;
-		this->bkey_type = bkey_type;
 
 		on_cache = false;
+		next_refresh = 0;
 		if (cache_time > 0) {
+			on_cache = true;
 			recache();
 		}
 	}
 /*}}}*/
 
-	static arcusMap<K, V> create(arcus* client, const string& key, ARCUS_TYPE type, arcusBKey::ARCUS_BKEY_TYPE bkey_type = arcusBKey::BKEY_LONG, int exptime = 0, int cache_time = 0)/*{{{*/
+	static arcusMap<K, V> create(arcus* client, const string& key, ARCUS_TYPE type, int exptime = 0, int cache_time = 0)/*{{{*/
 	{
 		arcusFuture ft = client->bop_create(key, type, exptime);
 		if (ft->get_result<bool>() == true) {
-			arcusMap<K, V> map_(client, key, bkey_type, cache_time);
+			arcusMap<K, V> map_(client, key, cache_time);
 			return map_;
 		}
 
@@ -222,9 +260,9 @@ public:
 	}
 /*}}}*/
 
-	static arcusMap<K, V> get(arcus* client, const string& key, arcusBKey::ARCUS_BKEY_TYPE bkey_type = arcusBKey::BKEY_LONG, int cache_time = 0)/*{{{*/
+	static arcusMap<K, V> get(arcus* client, const string& key, int cache_time = 0)/*{{{*/
 	{
-		arcusMap<K, V> map_(client, key, bkey_type, cache_time);
+		arcusMap<K, V> map_(client, key, cache_time);
 		return map_;
 	}
 /*}}}*/
@@ -240,12 +278,8 @@ public:
 		}
 
 		try {
-			if (bkey_type == arcusBKey::BKEY_LONG) {
-				return client->bop_get(key, BKEY_LONG_MIN, BKEY_LONG_MAX)->get_result_map<K, V>().size();
-			}
-			else {
-				return client->bop_get(key, BKEY_HEX_MIN, BKEY_HEX_MAX)->get_result_map<K, V>().size();
-			}
+			arcusFuture ft = client->bop_get(key, arcusBKeyMinMax<K>::get_min_key(), arcusBKeyMinMax<K>::get_max_key());
+			ft->get_result_map<K, V>().size();
 		}
 		catch (arcusCollectionIndexException& e) {
 			return 0;
@@ -348,12 +382,8 @@ private:
 	void recache()/*{{{*/
 	{
 		try {
-			if (bkey_type == arcusBKey::BKEY_LONG) {
-				cache = client->bop_get(key, BKEY_LONG_MIN, BKEY_LONG_MAX)->get_result_map<K, V>();
-			}
-			else {
-				cache = client->bop_get(key, BKEY_HEX_MIN, BKEY_HEX_MAX)->get_result_map<K, V>();
-			}
+			arcusFuture ft = client->bop_get(key, arcusBKeyMinMax<K>::get_min_key(), arcusBKeyMinMax<K>::get_max_key());
+			cache = ft->get_result_map<K, V>();
 		}
 		catch (arcusCollectionIndexException& e) {
 			cache.clear();
@@ -370,8 +400,6 @@ protected:
 	map<K, arcusBopItem<V> > cache;
 	bool on_cache;
 	time_t next_refresh;
-
-	arcusBKey::ARCUS_BKEY_TYPE bkey_type;
 };
 
 

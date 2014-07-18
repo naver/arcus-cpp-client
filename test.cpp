@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
 	 * TEST 1: primitive type
 	 *
 	 ***************************************************************************************************/
-	if (true) {
+	if (false) {
 		ret = client->set("test:string1", "test...", 3);
 		print(ret->get_result<bool>());
 		assert (ret->get_result<bool>() == true);
@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
 	 * TEST 2: list
 	 *
 	 ***************************************************************************************************/
-	if (true) {
+	if (false) {
 		list<string> l_s_src;
 		list<string> l_s;
 
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
 	 * TEST 3: set
 	 *
 	 ***************************************************************************************************/
-	if (true) {
+	if (false) {
 		set<string> s_s_src;
 		set<string> s_s;
 
@@ -358,7 +358,7 @@ int main(int argc, char* argv[])
 	 * TEST 4: btree
 	 *
 	 ***************************************************************************************************/
-	if (true) {
+	if (false) {
 		map<uint64_t, arcusBopItem<int> > m_l_i;
 		map<vector<unsigned char>, arcusBopItem<string> > m_v_s;
 
@@ -453,7 +453,7 @@ int main(int argc, char* argv[])
 	 * TEST 5: btree mget, smget
 	 *
 	 ***************************************************************************************************/
-	if (true) {
+	if (false) {
 		multimap<uint64_t, arcusBopItem<int> > mm_l_i;
 		map<string, map<uint64_t, arcusBopItem<int> > > mget_l_i;
 
@@ -539,7 +539,7 @@ int main(int argc, char* argv[])
 	 * TEST 6: dynamic list
 	 *
 	 ***************************************************************************************************/
-	if (true) {
+	if (false) {
 		list<string> l_s_src;
 		for (i=0; i<6; i++) {
 			char buff[256];
@@ -567,7 +567,7 @@ int main(int argc, char* argv[])
 	 * TEST 7: dynamic set
 	 *
 	 ***************************************************************************************************/
-	if (true) {
+	if (false) {
 		list<string> l_s_src;
 		for (i=0; i<6; i++) {
 			char buff[256];
@@ -600,18 +600,23 @@ int main(int argc, char* argv[])
 	 *
 	 ***************************************************************************************************/
 	if (true) {
-		map<uint64_t, arcusBopItem<string> > m_is_src;
+		map<uint64_t, arcusBopItem<string> > m_is_src, new_map;
 		for (i=0; i<6; i++) {
 			char buff[256];
 			sprintf(buff, "item %d", i);
 			m_is_src[i] = arcusBopItem<string>(buff);
 		}
 
-		arcusMap<uint64_t, string> arcus_map = arcusMap<uint64_t, string>::create(client, "test:arcus_map", FLAG_STRING, arcusBKey::BKEY_LONG, 5, 3);
+		arcusMap<uint64_t, string> arcus_map = arcusMap<uint64_t, string>::create(client, "test:arcus_map", FLAG_STRING, 5, 3);
 		assert (arcus_map.size() == 0);
 
 		arcus_map.insert(m_is_src.begin(), m_is_src.end());
+print(arcus_map.size());
 		assert (arcus_map.size() == m_is_src.size());
+
+		new_map.insert(arcus_map.begin(), arcus_map.end());
+		assert (arcus_map.size() == new_map.size());
+
 
 		map<uint64_t, arcusBopItem<string> >::iterator it = m_is_src.begin();
 		for (; it != m_is_src.end(); ++it) {
