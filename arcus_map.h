@@ -32,16 +32,14 @@ class arcusMapNotCached {};
 class arcusMapException {};
 
 
-template <typename K>
-struct arcusBKeyMinMax
+template <typename K> struct arcusBKeyMinMax/*{{{*/
 {
 	static K get_min_key() { assert(false); }
 	static K get_max_key() { assert(false); }
 };
+/*}}}*/
 
-
-template <>
-struct arcusBKeyMinMax<uint64_t>
+template <> struct arcusBKeyMinMax<uint64_t>/*{{{*/
 {
 	static uint64_t get_min_key()
 	{ 
@@ -53,9 +51,9 @@ struct arcusBKeyMinMax<uint64_t>
 		return arcusBKey::get_max_long_key().l_key;
 	}
 };
+/*}}}*/
 
-template <>
-struct arcusBKeyMinMax<vector<unsigned char> >
+template <> struct arcusBKeyMinMax<vector<unsigned char> >/*{{{*/
 {
 	static vector<unsigned char> get_min_key()
 	{ 
@@ -67,7 +65,7 @@ struct arcusBKeyMinMax<vector<unsigned char> >
 		return arcusBKey::get_max_hex_key().h_key;
 	}
 };
-
+/*}}}*/
 
 
 
@@ -223,14 +221,19 @@ public:
 	}
 /*}}}*/
 
-	iterator lower_bound(const K& bkey)
+	iterator lower_bound(const K& bkey)/*{{{*/
 	{
 		if (on_cache) {
+			if (time(NULL) > this->next_refresh) {
+				recache();
+			}
+
 			return iterator(this, cache.lower_bound(bkey));
 		}
 
 		return iterator(this, bkey);
 	}
+/*}}}*/
 
 public:
 	arcusMap(arcus* client, const string& key, int cache_time = 0)/*{{{*/
@@ -279,7 +282,7 @@ public:
 
 		try {
 			arcusFuture ft = client->bop_get(key, arcusBKeyMinMax<K>::get_min_key(), arcusBKeyMinMax<K>::get_max_key());
-			ft->get_result_map<K, V>().size();
+			return ft->get_result_map<K, V>().size();
 		}
 		catch (arcusCollectionIndexException& e) {
 			return 0;

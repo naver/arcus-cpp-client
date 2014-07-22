@@ -62,7 +62,7 @@ template<typename U> void print(set<U> value)/*{{{*/
 {
 	typename set<U>::iterator it;
 
-	printf("## vector: ");
+	printf("## set: ");
 	for (it = value.begin(); it != value.end(); ++it) {
 		printf("%s, ", lexical_cast<string>(*it).c_str());
 	}
@@ -611,7 +611,6 @@ int main(int argc, char* argv[])
 		assert (arcus_map.size() == 0);
 
 		arcus_map.insert(m_is_src.begin(), m_is_src.end());
-print(arcus_map.size());
 		assert (arcus_map.size() == m_is_src.size());
 
 		new_map.insert(arcus_map.begin(), arcus_map.end());
