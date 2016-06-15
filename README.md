@@ -6,7 +6,7 @@ This is a c++ client driver for Arcus cloud.
 
 ## Requirement
 
-This driver requires zookeeper and hashkit library.
+This driver requires zookeeper and mhash library.
 Install them first.
 
 

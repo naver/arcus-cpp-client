@@ -1331,7 +1331,7 @@ private:
 				else { // eflag not exists
 					length = lexical_cast<int>(eflag);
 					data = eflag + strlen(eflag) + 1;
-					eflag = "";
+					eflag = (char*)"";
 				}
 
 				// bop alloc

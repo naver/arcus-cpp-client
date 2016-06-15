@@ -57,6 +57,7 @@ class arcusNode;
 
 // etc
 #include <libhashkit/hashkit.h>
+#include <mhash.h>
 #include "zookeeper.h"
 
 
@@ -284,7 +285,7 @@ enum COLLECTION_TYPE/*{{{*/
 };
 /*}}}*/
 
-template <typename T> void arcus_log_template(char* format, ...)/*{{{*/
+template <typename T> void arcus_log_template(const char* format, ...)/*{{{*/
 {
 	static bool enable = false;
 	if (format == NULL) {
@@ -1362,7 +1363,9 @@ private:
 		unsigned int hash;
 		unsigned char r[16];
 
-		libhashkit_md5_signature((unsigned char*)input.c_str(), input.length(), r);
+		MHASH td = mhash_init(MHASH_MD5);
+		mhash(td, (unsigned char*)input.c_str(), input.length());
+		mhash_deinit(td, r);
 
 		for (int i=0; i<per_hash; i++) {
 			hash = (r[3 + i*4] << 24) | (r[2 + i*4] << 16) | (r[1 + i*4] << 8) | r[0 + i*4];
@@ -3748,7 +3751,7 @@ public:
 /*}}}*/
 
 
-typedef static void (*zookeeper_watcher)(void *zk);
+typedef void (*zookeeper_watcher)(void *zk);
 
 struct Zookeeper/*{{{*/
 {

@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 
 	client->connect(argv[1], argv[2]);
 
-	arcus_log(NULL);
+	//arcus_log(NULL);
 
 	arcusFuture ret;
 
@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
 	 * TEST 1: primitive type
 	 *
 	 ***************************************************************************************************/
-	if (false) {
+	if (true) {
 		ret = client->set("test:string1", "test...", 3);
 		print(ret->get_result<bool>());
 		assert (ret->get_result<bool>() == true);
@@ -599,7 +599,7 @@ int main(int argc, char* argv[])
 	 * TEST 8: dynamic map
 	 *
 	 ***************************************************************************************************/
-	if (true) {
+	if (false) {
 		map<uint64_t, arcusBopItem<string> > m_is_src, new_map;
 		for (i=0; i<6; i++) {
 			char buff[256];
