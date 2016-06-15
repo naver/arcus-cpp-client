@@ -56,7 +56,6 @@ class arcusNode;
 
 
 // etc
-#include <libhashkit/hashkit.h>
 #include <mhash.h>
 #include "zookeeper.h"
 
