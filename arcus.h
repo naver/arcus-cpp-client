@@ -3983,7 +3983,10 @@ private:
 	{
 		unsigned char r[16];
 
-		libhashkit_md5_signature((unsigned char*)key.c_str(), key.length(), r);
+		MHASH td = mhash_init(MHASH_MD5);
+		mhash(td, (unsigned char*)key.c_str(), key.length());
+		mhash_deinit(td, r);
+
 		return r[3] << 24 | r[2] << 16 | r[1] << 8 | r[0];
 	}
 
