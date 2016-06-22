@@ -3741,6 +3741,55 @@ public:
 };
 /*}}}*/
 
+// dummy node for util
+class arcusDummyNode : public arcusNode/*{{{*/
+{
+public:
+	arcusDummyNode(const string& addr, const string& name) : arcusNode(addr, name) {}
+
+	virtual ~arcusDummyNode() {}
+
+	// dummy functions
+	/*{{{*/
+		virtual arcusFuture set(const string& key, const arcusValue& v, int exptime=0) {}
+		virtual arcusFuture get(const string& key) {}
+		virtual arcusFuture gets(const string& key) {}
+		virtual arcusFuture incr(const string& key, int v= 1) {}
+		virtual arcusFuture decr(const string& key, int v= 1) {}
+		virtual arcusFuture del(const string& key) {}
+		virtual arcusFuture add(const string& key, const arcusValue& v, int exptime=0) {}
+		virtual arcusFuture append(const string& key, const string& v, int exptime=0) {}
+		virtual arcusFuture prepend(const string& key, const string& v, int exptime=0) {}
+		virtual arcusFuture replace(const string& key, const arcusValue& v, int exptime=0) {}
+		virtual arcusFuture cas(const string& key, const arcusValue& v, int cas_id, int exptime=0) {}
+		virtual arcusFuture lop_create(const string& key, ARCUS_TYPE type, int exptime=0, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture lop_insert(const string& key, int index, const arcusValue& value, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture lop_get(const string& key, int start = 0, int end = -1, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture lop_delete(const string& key, int start = 0, int end = -1, const arcusAttribute& attrs = default_attrs) {}
+
+		virtual arcusFuture sop_create(const string& key, ARCUS_TYPE type, int exptime=0, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture sop_insert(const string& key, const arcusValue& value, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture sop_get(const string& key, int count = 0, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture sop_exist(const string& key, const arcusValue& value, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture sop_delete(const string& key, const arcusValue& value, const arcusAttribute& attrs = default_attrs) {}
+
+		virtual arcusFuture bop_create(const string& key, ARCUS_TYPE type, int exptime=0, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture bop_insert(const string& key, const arcusBKey& bkey, const arcusValue& value, const arcusEflag& eflag = eflag_none, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture bop_upsert(const string& key, const arcusBKey& bkey, const arcusValue& value, const arcusEflag& eflag = eflag_none, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture bop_update(const string& key, const arcusBKey& bkey, const arcusValue& value, const arcusEflag& eflag = eflag_none, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture bop_get(const string& key, const arcusBKey& start, const arcusBKey& end, const arcusEflag& filter = default_filter, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture bop_delete(const string& key, const arcusBKey& start, const arcusBKey& end, const arcusEflag& filter = default_filter, const arcusAttribute& attrs = default_attrs) {}
+		virtual arcusFuture bop_count(const string& key, const arcusBKey& start, const arcusBKey& end, const arcusEflag& filter = default_filter) {}
+
+		virtual arcusFuture bop_mget(const vector<string>& key_list, const arcusBKey& start, const arcusBKey& end, const arcusEflag& filter = default_filter, int offset = 0, int count = 50) {}
+
+		virtual arcusFuture bop_smget(const vector<string>& key_list, const arcusBKey& start, const arcusBKey& end, const arcusEflag& filter = default_filter, int offset = 0, int count = 50) {}
+
+		virtual int disconnect() {}
+/*}}}*/
+};
+/*}}}*/
+
 class arcusNodeAllocator/*{{{*/
 {
 public:
@@ -3924,6 +3973,7 @@ public:
 			
 			string addr = child.substr(0, idx);
 			string name = child.substr(idx);
+			printf("%s-%s-%s\n", child.c_str(), addr.c_str(), name.c_str());
 
 			arcusNode* node;
 			if (addr_node_map.find(addr) != addr_node_map.end()) {
@@ -3957,6 +4007,11 @@ public:
 	}
 /*}}}*/
 
+	size_t num_node()
+	{
+		return hash_node_map->size();
+	}
+
 	arcusNode* get_node(const string& key)/*{{{*/
 	{
 		unsigned int hash = hash_key(key);
@@ -3969,7 +4024,6 @@ public:
 		it = hash_node_map->upper_bound(hash);
 		if (it == hash_node_map->end()) {
 			// if end return first (cause circle)
-			printf("#### %d\n", hash_node_map->size());
 			assert (hash_node_map->size() > 0);
 			return hash_node_map->begin()->second;
 		}
