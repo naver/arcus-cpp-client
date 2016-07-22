@@ -41,6 +41,8 @@ using namespace std;
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/shared_ptr.hpp>
 
+using namespace boost;
+
 using namespace boost::gregorian;
 using namespace boost::posix_time;
 
@@ -763,6 +765,7 @@ struct arcusBKey/*{{{*/
 	vector<unsigned char> h_key;
 };
 /*}}}*/
+
 
 struct arcusEflag/*{{{*/
 {
