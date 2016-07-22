@@ -41,7 +41,6 @@ using namespace std;
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/shared_ptr.hpp>
 
-using namespace boost;
 using namespace boost::gregorian;
 using namespace boost::posix_time;
 
@@ -3799,6 +3798,7 @@ public:
 /*}}}*/
 
 
+class arcusLocator;
 typedef void (*zookeeper_watcher)(void *zk);
 
 struct Zookeeper/*{{{*/
@@ -3814,12 +3814,13 @@ struct Zookeeper/*{{{*/
 		myid.client_id = 0;
 	}
 
-	int connect(const string& addr, const string& svc_code, zookeeper_watcher zwatcher, int tmout=15000)
+	int connect(const string& addr, const string& svc_code, zookeeper_watcher zwatcher, arcusLocator* loc, int tmout=15000)
 	{
 		ensemble_list = addr;
 		service_code = svc_code;
 		session_timeout = tmout;
 		watcher = zwatcher;
+		locator = loc;
 
 		handle = zookeeper_init(ensemble_list.c_str(), arcus_watcher, session_timeout, &myid, this, 0);
 		if (handle) return 0;
@@ -3835,13 +3836,12 @@ struct Zookeeper/*{{{*/
 
 	vector<string> get_children(const string& path)
 	{
-		struct String_vector strings;
-		zoo_get_children(handle, path.c_str(), 1, &strings);
-
-		
 		vector<string> str;
-		for (int i=0; i<strings.count; i++) {
-			str.push_back(strings.data[i]);
+		struct String_vector strings;
+		if (zoo_get_children(handle, path.c_str(), 1, &strings) == ZOK) {
+			for (int i=0; i<strings.count; i++) {
+				str.push_back(strings.data[i]);
+			}
 		}
 
 		return str;
@@ -3851,6 +3851,10 @@ struct Zookeeper/*{{{*/
 	{
 		int rc;
 		Zookeeper* zk = (Zookeeper*)zk_p;
+
+		if (type == ZOO_CHILD_EVENT) {
+			zk->watcher(zk->locator);
+		}
 		
 		if (type != ZOO_SESSION_EVENT) {
 			return;
@@ -3880,7 +3884,7 @@ struct Zookeeper/*{{{*/
 
 			/* Respawn the expired zookeeper client. */
 			zk->disconnect();
-			zk->connect(zk->ensemble_list, zk->service_code, zk->watcher, zk->session_timeout);
+			zk->connect(zk->ensemble_list, zk->service_code, zk->watcher, zk->locator, zk->session_timeout);
 		}
 	}
 
@@ -3898,6 +3902,7 @@ struct Zookeeper/*{{{*/
 	struct String_vector last_strings;
 
 	zookeeper_watcher watcher;
+	arcusLocator* locator;
 	void* param;
 };
 /*}}}*/
@@ -3940,7 +3945,7 @@ public:
 
 	int connect(const string& addr, const string& code)
 	{
-		int ret = zoo->connect(addr, code, arcus_watcher);
+		int ret = zoo->connect(addr, code, arcus_watcher, this);
 		arcus_watcher(this);
 		return ret;
 	}
@@ -3997,8 +4002,9 @@ public:
 			if (it->second->in_use == false) {
 				arcusNode* node = it->second;
 				node->disconnect();
+				delete node;  
+
 				addr_node_map.erase(it->first);
-				delete node;
 			}
 		}
 
@@ -4016,8 +4022,10 @@ public:
 	{
 		unsigned int hash = hash_key(key);
 
+		pthread_mutex_lock(&mutex);
 		map<unsigned int, arcusNode*>::iterator it = hash_node_map->find(hash);
 		if (it != hash_node_map->end()) {
+			pthread_mutex_unlock(&mutex);
 			return it->second;
 		}
 
@@ -4025,9 +4033,11 @@ public:
 		if (it == hash_node_map->end()) {
 			// if end return first (cause circle)
 			assert (hash_node_map->size() > 0);
+			pthread_mutex_unlock(&mutex);
 			return hash_node_map->begin()->second;
 		}
 
+		pthread_mutex_unlock(&mutex);
 		return it->second;
 	}
 /*}}}*/
