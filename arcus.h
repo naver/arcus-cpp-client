@@ -58,7 +58,7 @@ class arcusNode;
 
 // etc
 #include <mhash.h>
-#include "zookeeper.h"
+#include <zookeeper/zookeeper.h>
 
 
 #define MAX_ELEMENT_SIZE	4096
